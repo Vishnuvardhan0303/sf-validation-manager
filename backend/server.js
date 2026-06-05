@@ -4,12 +4,16 @@ const cors = require('cors');
 const session = require('express-session');
 const axios = require('axios');
 const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'sf-secret',
   resave: false,
@@ -104,13 +108,8 @@ async function toggleRuleById(session, id, active) {
     'Content-Type': 'application/json'
   };
   const base = `${session.instanceUrl}/services/data/v59.0/tooling`;
-
-  // Step 1: fetch full rule — formula is inside Metadata object
   const fetchRes = await axios.get(`${base}/sobjects/ValidationRule/${id}`, { headers });
   const meta = fetchRes.data.Metadata || {};
-  console.log('Metadata:', JSON.stringify(meta));
-
-  // Step 2: PATCH using Metadata wrapper with formula from meta
   await axios.patch(
     `${base}/sobjects/ValidationRule/${id}`,
     {
@@ -128,7 +127,6 @@ async function toggleRuleById(session, id, active) {
 
 // ─── Validation Rules Routes ─────────────────────────────────────────────────
 
-// GET all rules
 app.get('/api/validation-rules', requireAuth, async (req, res) => {
   try {
     const query = encodeURIComponent(
@@ -145,27 +143,21 @@ app.get('/api/validation-rules', requireAuth, async (req, res) => {
     }));
     res.json({ rules, total: rules.length });
   } catch (error) {
-    console.error('Fetch rules error:', error.response?.data);
     res.status(500).json({ error: 'Failed to fetch rules', details: error.response?.data });
   }
 });
 
-// PATCH single rule toggle
 app.patch('/api/validation-rules/toggle/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const { active } = req.body;
-  console.log(`Toggle single: id=${id} active=${active}`);
   try {
     await toggleRuleById(req.session, id, active);
-    console.log(`Toggle success: id=${id} active=${active}`);
     res.json({ success: true, id, active });
   } catch (error) {
-    console.error('Single toggle error:', JSON.stringify(error.response?.data));
     res.status(500).json({ error: 'Failed to update rule', details: error.response?.data });
   }
 });
 
-// PATCH bulk rules
 app.patch('/api/validation-rules', requireAuth, async (req, res) => {
   const { rules } = req.body;
   const results = [], errors = [];
@@ -174,14 +166,12 @@ app.patch('/api/validation-rules', requireAuth, async (req, res) => {
       await toggleRuleById(req.session, rule.id, rule.active);
       results.push({ id: rule.id, success: true });
     } catch (error) {
-      console.error('Bulk toggle error for', rule.id, error.response?.data);
       errors.push({ id: rule.id, error: error.response?.data });
     }
   }
   res.json({ results, errors, success: errors.length === 0 });
 });
 
-// POST deploy
 app.post('/api/validation-rules/deploy', requireAuth, async (req, res) => {
   const { changes } = req.body;
   const results = [], errors = [];
@@ -212,6 +202,16 @@ app.post('/api/validation-rules/deploy', requireAuth, async (req, res) => {
   }
 });
 
+// ─── Serve React Frontend ─────────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 Backend running on http://localhost:${PORT}\n`);
 });
+
+  
