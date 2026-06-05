@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SF Validation Manager
 
 A full-stack React + Node.js application to manage Salesforce Account validation rules via OAuth 2.0 PKCE + Tooling API.
@@ -161,3 +162,6 @@ The PKCE flow generates a `code_verifier` (random secret) and `code_challenge` (
 - **Auth**: OAuth 2.0 PKCE (RFC 7636)
 - **Salesforce APIs**: Tooling API v59.0
 - **Styling**: Pure CSS with CSS variables
+=======
+# sf-validation-manager
+>>>>>>> 4c1aaf00aa22fdff2b6598536c7bf8b821b34130
