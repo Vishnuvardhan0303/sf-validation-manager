@@ -1,0 +1,12 @@
+{
+  "name": "sf-validation-manager",
+  "version": "1.0.0",
+  "description": "Salesforce Validation Rules Manager - Full Stack",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev": "npm run start:backend & npm run start:frontend",
+    "build": "cd frontend && npm run build"
+  }
+}
